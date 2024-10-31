@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox, QFileDialog, QHBoxLayou
     QLineEdit, QDateTimeEdit, QVBoxLayout, QDialog
 from config import MyConfig
 from config.MyConfig import PrivateConfig
-from src.utils import MyUtil
+from src.utils import MyUtil, z7_pack
 
 
 class OutputRepoForm:
@@ -294,7 +294,7 @@ def extract_changed_files(repo_path,branchList, start_datetime_timestamp, end_da
         print(f"操作完成，回到分支: {first_branch}")
 
     if len(imgList) > 0:
-        compress_files_to_tar_gz(assetsOutputPath, os.path.join(outputPath, "assets.tar.gz"), )
+        compress_files_to_tar_gz(assetsOutputPath, outputPath)
         print(f"导出成功：{outputPath}/assets.tar.gz")
         print("导出图片数量:", len(imgList))
         print("图片列表:\n", imgList)
@@ -315,31 +315,47 @@ def check(pyOutputFiles,manuaOutputFiles):
         print(list(set(manuaOutputFiles) - set(pyOutputFiles)))
 
 
-def compress_files_to_tar_gz(source_folder, output_filename):
+import os
+import tarfile
+import shutil
+import os
+import tarfile
+
+import os
+import tarfile
+
+
+def compress_files_to_tar_gz(source_folder, output_basePath, is_compress_volumes=False):
     """
     将指定文件夹下的所有文件压缩打包成tar.gz格式。
 
     :param source_folder: 文件所在的源文件夹路径
-    :param output_filename: 输出的tar.gz文件名（包括路径）
+    :param output_basePath: 输出的tar.gz文件名的基本路径（不包括卷号和扩展名）
+    :param is_compress_volumes: 是否启用分卷压缩，默认为False
     """
-    # 确保输出文件名以.tar.gz结尾
-    # if not output_filename.endswith('.tar.gz'):
-    #     output_filename += '.tar.gz'
+    # 计算源文件夹的总大小
+    total_size = sum(
+        os.path.getsize(os.path.join(root, file)) for root, _, files in os.walk(source_folder) for file in files)
 
-    with tarfile.open(output_filename, 'w:gz') as tar:
-        # 在压缩包内创建一个assets文件夹
-        assets_info = tarfile.TarInfo('assets/')
-        assets_info.type = tarfile.DIRTYPE
-        tar.addfile(assets_info)
+    # 大于50MB时启用分卷压缩
+    if is_compress_volumes and total_size > 50 * 1024 * 1024:
+        z7_pack.split_compression(source_folder,output_basePath)
+    else:
+        output_filename = f"{output_basePath}/assets.tar.gz"
+        # 不进行分卷压缩
+        with tarfile.open(output_filename, 'w:gz') as tar:
+            # 在压缩包内创建一个assets文件夹
+            assets_info = tarfile.TarInfo('assets/')
+            assets_info.type = tarfile.DIRTYPE
+            tar.addfile(assets_info)
 
-        # 遍历源文件夹，将所有文件添加到压缩包的assets文件夹下
-        for root, _, files in os.walk(source_folder):
-            for file in files:
-                file_path = os.path.join(root, file)
-                # 使用os.path.relpath确保文件被放置在assets目录下
-                arcname = os.path.join('assets', os.path.relpath(file_path, source_folder))
-                tar.add(file_path, arcname=arcname)
-
+            # 遍历源文件夹，将所有文件添加到压缩包的assets文件夹下
+            for root, _, files in os.walk(source_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    # 使用os.path.relpath确保文件被放置在assets目录下
+                    arcname = os.path.join('assets', os.path.relpath(file_path, source_folder))
+                    tar.add(file_path, arcname=arcname)
 # 导出文件夹下的图片到目标文件夹
 def outputImgList(srcDir,imgList,outputPath):
     for img in imgList:
@@ -382,4 +398,4 @@ def start():
 
 # 示例用法
 if __name__ == '__main__':
-    start()
+    compress_files_to_tar_gz(r"D:\工作\文档相关\上传\1029\assets", r"D:\工作\文档相关\上传\1029\assets", is_compress_volumes=True)
