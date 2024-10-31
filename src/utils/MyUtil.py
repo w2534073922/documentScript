@@ -80,6 +80,7 @@ def compress_to_tar_gz(Folder_or_fileList, output_path,fileName, packName):
     # output_dir = 'F:\\网易\\文档\\打包\\1018临时3.3\\输出结果_' + datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     # link = 'https://static-vusion.nos-eastchina1.126.net/markdown_image'
     # replace_image_paths(mergeDoc(source_dir,output_dir),link)
+
 def mergeDoc(docs_folder, output_folder=None,isDebug=None):
     # 屏蔽的文件夹和文件列表
     skip_items = [".vuepress", "999.others",  "README.md"]
@@ -120,7 +121,37 @@ def mergeDoc(docs_folder, output_folder=None,isDebug=None):
                     # 每个markdown文件之间添加一个换行符
                     output.write('\n\n')
     return output_markdown
- # ./pandoc.exe langChain.docx -t markdown-smart -o testconv.md --extract-assets=.
+
+def getAllDocContent(docs_folder):
+    # 屏蔽的文件夹和文件列表
+    skip_items = [".vuepress", "999.others", "README.md"]
+    content = ""
+    # 遍历当前文件夹下的所有文件
+    for filename in os.listdir(docs_folder):
+        # 判断文件是否以.md结尾
+        if filename.endswith('.md'):
+            # 构建文件的完整路径
+            filepath = os.path.join(docs_folder, filename)
+            # 打开当前markdown文件，编码为utf-8
+            with open(filepath, 'r', encoding='utf-8') as file:
+                # 读取文件内容
+                content += file.read()
+    # 遍历根文件夹及其子文件夹
+    for foldername, subfolders, filenames in os.walk(docs_folder):
+        # 判断当前文件夹或文件是否在屏蔽列表中
+        if any(blocked_item in foldername or blocked_item in filenames for blocked_item in skip_items):
+            continue
+        # 遍历当前文件夹下的所有文件
+        for filename in filenames:
+            # 判断文件是否以.md结尾
+            if filename.endswith('.md'):
+                # 构建文件的完整路径
+                filepath = os.path.join(foldername, filename)
+                # 打开当前markdown文件，编码为utf-8
+                with open(filepath, 'r', encoding='utf-8') as file:
+                    # 读取文件内容
+                    content += file.read()
+    return content
 
 def replace_image_paths(markdown_file, link):
     # 读取markdown文件内容
@@ -214,13 +245,4 @@ def removeInvalidImg(folder_path):
     #
 
 if __name__ == '__main__':
-    # compress_to_tar_gz("D:\\工作\\文档相关\\上传\\0709上传\\docs","D:\\工作\\文档相关\\上传\\0709上传\\T","BB")
-
-    # # 获取目录下所有文件
-    # files = os.listdir("D:\\工作\\文档相关\\上传\\0709上传\\docs")
-    # # 过滤出 .md 文件
-    # md_files = [os.path.join("D:\\工作\\文档相关\\上传\\0709上传\\docs", f) for f in files if f.endswith('.md')]
-    #
-    # compress_to_tar_gz(md_files,"D:\\工作\\文档相关\\上传\\0709上传\\T","BB")
-    #
-    pass
+    print(getAllDocContent())
