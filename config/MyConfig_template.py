@@ -38,6 +38,8 @@ class PublicConfig:
     needExcludedPopoLinkList = [
         'https://docs.popo.netease.com/lingxi/cf56d061f7f04559acb331b9e476849f',
     ]
+    # 下载文档附件时需要下载的文件类型
+    download_supported_types = ['.zip', '.pdf', '.jar', '.rar']
     # 批量添加的文档样式
     markdownStyle = ('''
 <style>
