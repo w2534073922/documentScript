@@ -1,5 +1,5 @@
 import codecs
-import datetime
+from datetime import datetime,timedelta
 import json
 import os
 import re
@@ -480,6 +480,35 @@ def find_oldest_updated_docs_multithread(repo_path, count=50, num_threads=MyConf
 
     return [os.path.join('docs', filename) for filename, _ in oldest_files]
 
+
+def get_changed_files(repoPath, days):
+    # 计算时间差
+    since = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    repo = Repo(repoPath)
+    # 获取指定时间范围内的所有提交
+    commits = list(repo.iter_commits(since=since))
+    result = {}
+    # 遍历提交并打印信息
+    for commit in commits:
+        # print(f"Commit: {commit.hexsha} by {commit.author.name} on {commit.committed_datetime}")
+        # 遍历每次提交中的文件变化
+        for file_change in commit.diff(commit.parents[0] if commit.parents else None):
+            status = file_change.change_type
+            file_path = file_change.b_path
+            # 只处理 .md 文件，并且状态为 A 或 M
+            if file_path.endswith('.md') and status in ['A', 'M']:
+                file_path = file_path.replace('docs/', '')
+                # print(f"{'修改' if status == 'M' else '新增'}\t\t{file_path}")
+                result[file_path] = '修订' if status == 'M' else '新增'
+    if len(result) == 0:
+        print("\033[31m没有找到任何修改的 .md 文件。\033[0m")
+        return
+    else:
+        #清理控制台
+        os.system('cls')
+    for file_path, status in result.items():
+        print(f"{file_path.split('/')[-1].split('.')[1]}\t\t\t\thttps://community.codewave.163.com/CommunityParent/fileIndex?filePath={file_path}\t{status}")
+
 def start():
     #必填，项目文件夹路径
     documentProjectPath = MyConfig.PrivateConfig.repoPath
@@ -506,6 +535,7 @@ def start():
 \t4、为所有文档添加img样式（仅在文档中心的markdown组件下生效）
 \t5、搜索前50名最久未更新的文档（执行时间较长）
 \t6、按图片列表导出图片（用于提取其他分支没有的图片）
+\t7、搜索前x天内发生变化的文档
 \n输入数字选择：'''
 
     #select = inputimeout(prompt=hintText,timeout=12)
@@ -527,6 +557,9 @@ def start():
         outputPath = input("输入导出图片的路径：")
         imgList = input("输入图片列表：")
         outputImgList(srcDir=os.path.join(documentProjectPath, "assets"),outputPath=outputPath,imgList=eval(imgList))
+    elif select == "7":
+        x_days = int(input("输入从现在向前查找的天数："))
+        get_changed_files(repoPath=documentProjectPath,days=x_days)
     else:
         print("\033[31m输入有误\033[0m")
         exit(0)
