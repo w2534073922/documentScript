@@ -122,6 +122,14 @@ def mergeDoc(docs_folder, output_folder=None,isDebug=None):
                     output.write('\n\n')
     return output_markdown
 
+#获取文件夹下所有markdown文件列表
+def getAllMarkdownFileByFolder(markdown_folderdocs_folder):
+    markdow_file_list = []
+    for root, _, files in os.walk(markdown_folderdocs_folder):
+        for file in files:
+            if file.endswith('.md'):
+                markdow_file_list.append(os.path.join(root, file))
+    return markdow_file_list
 def getAllDocContent(docs_folder):
     # 屏蔽的文件夹和文件列表
     skip_items = [".vuepress", "999.others", "README.md"]

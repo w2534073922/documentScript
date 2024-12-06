@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 import time
 
 import commonmark
@@ -10,6 +11,8 @@ from bs4 import BeautifulSoup
 from flask import request, Response
 
 from config import MyConfig
+from src.utils.MyUtil import getAllMarkdownFileByFolder
+
 
 class PdfParam:
     def __init__(self, markdownPath, pdfPath,isMerge,isRemoveDigit,isAddBookmark,isGenerateHtml,fontSize):
@@ -72,7 +75,7 @@ def markdownToHtml(input_file_path, output_file_path):
     # HTML内容写入到输出文件中
     with open(output_file_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
-
+    return output_file_path
 
 def html_to_pdf(html_file, pdf_file):
     if not os.path.isfile(MyConfig.PrivateConfig.wkhtmltopdf):
@@ -81,7 +84,7 @@ def html_to_pdf(html_file, pdf_file):
     # pdfkit.from_file(html_file, pdf_file, configuration=config,options={"enable-local-file-access":True})
 
     html_content = open(html_file, 'r', encoding='utf-8').read()
-    print(html_content)
+    # print(html_content)
     pdfkit.from_string(html_content, pdf_file, configuration=config,options={"enable-local-file-access":True})
 
 #图片路径统一转换为绝对路径
@@ -100,8 +103,41 @@ def replaceAbsolutePath(content):
     # print(result)
     return result
 
-def generate(pdfParam=PdfParam):
-    pass
+def batchToPdf(markdownFolder, outputFolder):
+    #判断输出文件夹下是否有文件，如果有则让用户选择是否需要清空
+    if os.listdir(outputFolder):
+        print("输出文件夹不为空，是否清空？(y/n)")
+        choice = input()
+        if choice.lower() == 'y':
+            shutil.rmtree(outputFolder)
+            os.makedirs(outputFolder)
+
+    # 清空或创建输出文件夹
+    if os.path.exists(outputFolder):
+        shutil.rmtree(outputFolder)
+    os.makedirs(outputFolder)
+
+    # 获取markdown文件路径列表
+    markdownFileList = getAllMarkdownFileByFolder(markdownFolder)
+    total_files = len(markdownFileList)  # 获取总文件数
+
+    for index, markdownFile in enumerate(markdownFileList, start=1):
+        # 获取文件名，不带后缀
+        fileNameWithoutExtension = os.path.splitext(os.path.basename(markdownFile))[0]
+        # 计算相对路径（不包括文件名）
+        relativeDir = os.path.relpath(os.path.dirname(markdownFile), markdownFolder)
+        # 创建输出文件夹结构
+        outputDir = os.path.join(outputFolder, relativeDir)
+        os.makedirs(outputDir, exist_ok=True)
+        # 输出文件路径
+        outputFilePath = os.path.join(outputDir, fileNameWithoutExtension + '.pdf')
+        # 转换为HTML并生成PDF
+        html_to_pdf(markdownToHtml(markdownFile, outputFilePath), outputFilePath)
+
+        # 打印进度
+        print(f"当前进度: {index}/{total_files}\tPDF生成成功：{outputFilePath}")
+
+
 
 def startWeb():
     from flask import Flask
@@ -125,16 +161,21 @@ def startWeb():
         print(json.dumps(request.json))
         return Response(event_stream(json.dumps(request.json)), mimetype="text/event-stream")
 
-
     app.run(port=8877)
 
+def start():
+    markdownFloder = input("请输入markdown文件夹路径：")
+    outputFolder = input("请输入输出文件夹路径：")
+    batchToPdf(markdownFloder, outputFolder)
 
 if __name__ == '__main__':
-    input_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.md"
-    output_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.html"
-    markdownToHtml(input_file, output_file)
+    # input_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.md"
+    # output_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.html"
+    # markdownToHtml(input_file, output_file)
+    #
+    # input_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.html"
+    # output_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.pdf"
+    # html_to_pdf(input_file, output_file)
 
-    input_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.html"
-    output_file = r"D:\工作\文档相关\low-code-doc\docs\40.扩展与集成\10.扩展开发方式\30.服务端扩展开发\10.依赖库开发\10.服务端依赖库开发快速入门.pdf"
-    html_to_pdf(input_file, output_file)
     # startWeb()
+    pass
