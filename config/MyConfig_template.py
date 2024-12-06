@@ -30,6 +30,8 @@ class PrivateConfig:
     popoDocumentImageCookie = ''
     #使用多线程时的线程数，默认为cpu逻辑核心数，配置较低的电脑可以修改成2~4
     threadsNum = os.cpu_count()
+    #wkhtmltopdf的位置，这是用于生成PDF的工具
+    wkhtmltopdf = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 class PublicConfig:
     # 获取项目文件夹路径
