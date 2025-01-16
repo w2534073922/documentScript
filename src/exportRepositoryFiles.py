@@ -10,8 +10,8 @@ from PySide6.QtCore import QDateTime, Qt
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import QApplication, QMessageBox, QFileDialog, QHBoxLayout, QPushButton, QLabel, QCheckBox, \
     QLineEdit, QDateTimeEdit, QVBoxLayout, QDialog
-from config import MyConfig
-from config.MyConfig import PrivateConfig
+from myConfig import MyConfig
+from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src.utils import MyUtil, z7_pack
 
 
@@ -55,13 +55,13 @@ class MyForm(QDialog):
         # 创建表单布局
         form_layout = QVBoxLayout()
 
-        if os.path.exists(MyConfig.PrivateConfig.repoPath):
-            if os.path.exists(os.path.join(MyConfig.PrivateConfig.repoPath, '.git')):
-                self.text_label2 = QLabel(f"仓库路径：\t{MyConfig.PrivateConfig.repoPath}")
+        if os.path.exists(PrivateConfig.repoPath):
+            if os.path.exists(os.path.join(PrivateConfig.repoPath, '.git')):
+                self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath}")
             else:
-                self.text_label2 = QLabel(f"仓库路径：\t{MyConfig.PrivateConfig.repoPath} （该文件不是git仓库）")
+                self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath} （该文件不是git仓库）")
         else:
-            self.text_label2 = QLabel(f"仓库路径：\t{MyConfig.PrivateConfig.repoPath} （无效路径）")
+            self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath} （无效路径）")
 
 
         self.text_label2.setFixedHeight(20)
@@ -236,7 +236,7 @@ def extract_changed_files(repo_path,branchList, start_datetime_timestamp, end_da
     shutil.rmtree(assetsOutputPath)
     os.makedirs(assetsOutputPath, exist_ok=True)
     imgList = []
-    exclude_list = ['README.md', '.vuepress']
+    exclude_list = ['README.md', '.vuepress',".vitepress",'.idea','vx_notebook']
 
     currentHhmmss = datetime.now().strftime("%H%M%S")
 
@@ -253,7 +253,7 @@ def extract_changed_files(repo_path,branchList, start_datetime_timestamp, end_da
 
             MyUtil.copyFolder(os.path.join(repo_path, "docs"), os.path.join(currTempFolder, "docs"), exclude_list)
             if isAddDocStyle:
-                MyUtil.batchAddMarkdownStyle(os.path.join(currTempFolder, "docs"), MyConfig.PublicConfig.markdownStyle)
+                MyUtil.batchAddMarkdownStyle(os.path.join(currTempFolder, "docs"), PublicConfig.markdownStyle)
             MyUtil.compress_to_tar_gz(os.path.join(currTempFolder, "docs"), currTempFolder, "docs", "docs")
             print(f"tar.gz文件“{output_docsTargz}”创建成功。")
 
@@ -365,13 +365,13 @@ def outputImgList(srcDir,imgList,outputPath):
             print(f"文件不存在：{img}")
 def start():
     # # 文档仓库路径
-    # repo_path = MyConfig.PrivateConfig.repoPath
+    # repo_path = PrivateConfig.repoPath
     # # 要查找资源文件变更的起始时间
-    # start_date_str = MyConfig.PrivateConfig.startCommitTime
+    # start_date_str = PrivateConfig.startCommitTime
     # # 要查找资源文件变更的截止时间
-    # end_date_str = MyConfig.PrivateConfig.endCommitTime
+    # end_date_str = PrivateConfig.endCommitTime
     # # 要导出的分支
-    # branchList = MyConfig.PrivateConfig.branchList
+    # branchList = PrivateConfig.branchList
     #
     # if input("是否需要导出文档压缩包？（y/n） ：").strip().lower() == 'y':
     #     isOutputDoc = True
@@ -380,7 +380,7 @@ def start():
 
     form_data = openForm()
     pyOutputFiles = extract_changed_files(
-        repo_path = MyConfig.PrivateConfig.repoPath,
+        repo_path = PrivateConfig.repoPath,
         start_datetime_timestamp = form_data.startCommitTime,
         end_datetime_timestamp = form_data.endCommitTime,
         branchList = form_data.branchList,
@@ -398,4 +398,5 @@ def start():
 
 # 示例用法
 if __name__ == '__main__':
-    compress_files_to_tar_gz(r"D:\工作\文档相关\上传\1029\assets", r"D:\工作\文档相关\上传\1029\assets", is_compress_volumes=True)
+    start()
+    # compress_files_to_tar_gz(r"D:\工作\文档相关\上传\1029\assets", r"D:\工作\文档相关\上传\1029\assets", is_compress_volumes=True)

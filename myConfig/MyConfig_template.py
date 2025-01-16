@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta, datetime, time
 
-# 这是配置文件的模板，使用者需要创建自己的MyConfig.py文件
+# 这是配置文件的模板，使用者需要创建自己的py文件
 class PrivateConfig:
     # 文档的文件夹路径
     repoPath = r''
@@ -16,7 +16,8 @@ class PrivateConfig:
         "文档3.8",
         "文档3.9",
         "文档3.10",
-        "文档3.11"
+        "文档3.11",
+        "文档3.12"
     ]
     # 导出资源文件变更的起始时间，默认为两天前
     startCommitTime = (datetime.now() - timedelta(days=2)).replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
@@ -42,6 +43,8 @@ class PublicConfig:
     ]
     # 下载文档附件时需要下载的文件类型
     download_supported_types = ['.zip', '.pdf', '.jar', '.rar']
+    # 需要排除的文档链接
+    skip_items = [".vuepress",".vitepress", "999.others", "README.md", "99.参考"]
     # 批量添加的文档样式
     markdownStyle = ('''
 <style>

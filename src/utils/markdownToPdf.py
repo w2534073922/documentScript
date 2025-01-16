@@ -10,7 +10,8 @@ import pdfkit
 from bs4 import BeautifulSoup
 from flask import request, Response
 
-from config import MyConfig
+from myConfig import MyConfig
+from myConfig.MyConfig import PublicConfig, PrivateConfig
 from src.utils.MyUtil import getAllMarkdownFileByFolder
 
 
@@ -42,7 +43,7 @@ def markdownToHtml(input_file_path, output_file_path):
     mate = f'''
 <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" type="text/css" href="{MyConfig.PublicConfig.project_root}\config\pdf.css">
+    <link rel="stylesheet" type="text/css" href="{PublicConfig.project_root}\config\pdf.css">
 </head>
     '''
     html_content = mate + html_content
@@ -78,9 +79,9 @@ def markdownToHtml(input_file_path, output_file_path):
     return output_file_path
 
 def html_to_pdf(html_file, pdf_file):
-    if not os.path.isfile(MyConfig.PrivateConfig.wkhtmltopdf):
+    if not os.path.isfile(PrivateConfig.wkhtmltopdf):
         exit("请先安装wkhtmltopdf，并在配置文件中填入路径")
-    config = pdfkit.configuration(wkhtmltopdf=MyConfig.PrivateConfig.wkhtmltopdf)
+    config = pdfkit.configuration(wkhtmltopdf=PrivateConfig.wkhtmltopdf)
     # pdfkit.from_file(html_file, pdf_file, configuration=config,options={"enable-local-file-access":True})
 
     html_content = open(html_file, 'r', encoding='utf-8').read()
@@ -95,7 +96,7 @@ def replaceAbsolutePath(content):
         if match.group(2)  is not None:
             relative_path = match.group(2)
         label = str(match.group(0))
-        newPath = label.replace(relative_path,""+str(os.path.join(MyConfig.PrivateConfig.repoPath,"assets" ,os.path.basename(relative_path))))
+        newPath = label.replace(relative_path,""+str(os.path.join(PrivateConfig.repoPath,"assets" ,os.path.basename(relative_path))))
         return newPath
 
     imgPattern = r"!\[.*?\]\(([^)]*\.\.[^)]*)\)|<img.*?src=[\"\'](.*?)[\"\'].*?>"

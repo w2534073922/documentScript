@@ -8,18 +8,19 @@ import requests
 from bs4 import BeautifulSoup
 from openpyxl.workbook import Workbook
 
-from config import MyConfig
+from myConfig import MyConfig
+from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src.utils import MyUtil
 
 def start():
-    markdown_text = MyUtil.getAllDocContent(os.path.join(MyConfig.PrivateConfig.repoPath, "docs"))
+    markdown_text = MyUtil.getAllDocContent(os.path.join(PrivateConfig.repoPath, "docs"))
 
     # markdown转HTML
     html = BeautifulSoup(mistune.html(markdown_text), 'html.parser')
     # 获取html文本中的所有a标签，提取出满足特定后缀的链接
     a_tags = html.find_all('a')
 
-    extensions = MyConfig.PublicConfig.download_supported_types
+    extensions = PublicConfig.download_supported_types
     links = [a['href'] for a in a_tags if any(a['href'].endswith(ext) for ext in extensions)]
     print(f"搜索到{len(links)}个附件")
     video_tags = html.find_all('source')
@@ -32,7 +33,7 @@ def start():
         print(f"搜索到{len(video_links)}个视频")
 
     # 创建一个目录用于保存下载的文件
-    download_dir = os.path.join(MyConfig.PublicConfig.project_root, 'files/下载文档中心附件')
+    download_dir = os.path.join(PublicConfig.project_root, 'files/下载文档中心附件')
     os.makedirs(download_dir, exist_ok=True)
 
     # 如果目录下有文件则提示是否需要先清空
@@ -42,16 +43,16 @@ def start():
             os.mkdir(download_dir)
 
     if input("下载文件(y)  生成excel(n)：").lower() == 'y':
-        isGetVideo = True
+        isOnlyDownload = True
     else:
-        isGetVideo = False
+        isOnlyDownload = False
 
     for link in links:
         # URL解码
         decoded_link = urllib.parse.unquote(link)
         # 获取文件名
         file_name = os.path.basename(decoded_link)
-        if isGetVideo:
+        if isOnlyDownload:
             # 定义文件保存路径
             file_path = os.path.join(download_dir, file_name)
             print(decoded_link)
@@ -63,7 +64,7 @@ def start():
                 print(f"下载完成: {file_name}")
             else:
                 print(f"下载失败: {file_name}, 状态码: {response.status_code}")
-    if not isGetVideo:
+    if not isOnlyDownload:
         # 写表
         # 创建一个新的工作簿
         wb = Workbook()
@@ -73,12 +74,12 @@ def start():
         ws.title = "Data"
 
         new_list = list(
-            map(lambda x: [os.path.basename(urllib.parse.unquote(x)),urllib.parse.unquote(x),''], links))
+            map(lambda x: [os.path.basename(urllib.parse.unquote(x)),x,urllib.parse.unquote(x),''], links))
         # print(new_list)
         # print(type([['文件名', '原链接', '新链接']]))
         # print(type(new_list))
         # 写入一些数据
-        data = [['文件名', '原链接', '新链接']]+new_list
+        data = [['文件名', '原链接','转义链接', '新链接']]+new_list
         for row in data:
             ws.append(row)
         # 保存工作簿

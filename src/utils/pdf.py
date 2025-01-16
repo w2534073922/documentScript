@@ -1,7 +1,7 @@
 import os.path
 import subprocess
 
-from config import MyConfig
+from myConfig.MyConfig import PrivateConfig, PublicConfig
 
 isInit = False
 def init():
@@ -22,7 +22,7 @@ def init():
 
 # 检查 mdpdf 是否存在
     try:
-        result = subprocess.run(['where', 'mdpdf'], cwd = MyConfig.PrivateConfig.repoPath,capture_output=True, text=True, check=True,encoding='utf-8',errors='replace')
+        result = subprocess.run(['where', 'mdpdf'], cwd = PrivateConfig.repoPath,capture_output=True, text=True, check=True,encoding='utf-8',errors='replace')
         mdpdf_path = result.stdout.strip().split('\n')[0]  # 获取第一个匹配的路径
         print("mdpdf已安装于：", mdpdf_path)
         isInit = True
@@ -30,7 +30,7 @@ def init():
         print("没有安装mdpdf，现在安装...")
 
         # 安装 mdpdf
-        install_result = subprocess.run(['npm', 'install', '-g', 'mdpdf'], cwd = MyConfig.PrivateConfig.repoPath,capture_output=True, text=True,encoding='utf-8',errors='replace')
+        install_result = subprocess.run(['npm', 'install', '-g', 'mdpdf'], cwd = PrivateConfig.repoPath,capture_output=True, text=True,encoding='utf-8',errors='replace')
         print("标准输出:"+install_result.stdout)
         print("标准错误:"+install_result.stderr)
 
@@ -43,7 +43,7 @@ def init():
 
         # 再次检查 mdpdf 路径
         try:
-            result = subprocess.run(['where', 'mdpdf'], cwd = MyConfig.PrivateConfig.repoPath,capture_output=True, text=True, check=True)
+            result = subprocess.run(['where', 'mdpdf'], cwd = PrivateConfig.repoPath,capture_output=True, text=True, check=True)
             mdpdf_path = result.stdout.strip().split('\n')[0]
             print("mdpdf已安装于：", mdpdf_path)
             isInit = True
@@ -68,8 +68,8 @@ def useNodeConvertPDF(mdPath, pdfPath, isDebug=False):
         'mdpdf',
         mdPath,
         '--output',
-        pdfPath,  # 注意这里应该是.pdf而不是.md
-        '--style',os.path.join(MyConfig.PublicConfig.project_root,'config/pdf.css'),
+        pdfPath,
+        '--style',os.path.join(PublicConfig.project_root,'config/pdf.css'),
     ]
     if isDebug:
         command.append('--debug')
@@ -77,7 +77,7 @@ def useNodeConvertPDF(mdPath, pdfPath, isDebug=False):
     # 执行命令
     result = subprocess.run(
         command,
-        cwd = MyConfig.PublicConfig.project_root,
+        cwd = PublicConfig.project_root,
         capture_output=True,
         text=True,
         encoding='utf-8')

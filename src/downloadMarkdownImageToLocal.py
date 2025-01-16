@@ -7,11 +7,11 @@ import requests
 from pypinyin import lazy_pinyin
 import re
 from PySide6.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QMessageBox,QLabel
-from config import MyConfig
+from myConfig.MyConfig import PublicConfig, PrivateConfig
 
 global num
 num = 1
-def download_images(path=os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/新.md'),cookie=MyConfig.PrivateConfig.popoDocumentImageCookie,imgName=""):
+def download_images(path=os.path.join(PublicConfig.project_root,'files/下载popo图片/新.md'),cookie=PrivateConfig.popoDocumentImageCookie,imgName=""):
 
     with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -51,7 +51,7 @@ def download_images(path=os.path.join(MyConfig.PublicConfig.project_root,'files/
                     fileType=asset_path.split(".")[-1]
 
                     global num
-                    asset_path = os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片','assets',imgName) + str(num)+'.'+fileType
+                    asset_path = os.path.join(PublicConfig.project_root,'files/下载popo图片','assets',imgName) + str(num)+'.'+fileType
                     num=num+1
                     response = getImg(url)
                     if response.status_code == 302 or response.status_code == 401:
@@ -91,7 +91,7 @@ def download_images(path=os.path.join(MyConfig.PublicConfig.project_root,'files/
         content = content + f'''
 <div style="text-align: right;font-size: 14px;">
     <span style="color: rgb(78, 110, 142);">创建人：</span>
-    <span style="color: rgb(118, 118, 118);">{MyConfig.PrivateConfig.nickname}</span>
+    <span style="color: rgb(118, 118, 118);">{PrivateConfig.nickname}</span>
     <span style="color: rgb(78, 110, 142);margin: 0 0 0 40px;">更新时间：</span>
     <span style="color: rgb(118, 118, 118);">{datetime.now().year}年{datetime.now().month:02d}月{datetime.now().day:02d}日</span>
 </div>
@@ -118,7 +118,7 @@ def imgFileNameConvertPinyin(fileName):
     processed_str = ''.join(filter(lambda x: x.isalnum() or x == '_', pinyin_str))
     return processed_str
 def getImg(imgurl):
-    response = requests.get(imgurl, stream=True, headers={"Cookie": MyConfig.PrivateConfig.popoDocumentImageCookie, "Pragma": "no-cache"},allow_redirects=True)
+    response = requests.get(imgurl, stream=True, headers={"Cookie": PrivateConfig.popoDocumentImageCookie, "Pragma": "no-cache"},allow_redirects=True)
     return response
 
 # 原本是针对文件夹下的md文件批量下载图片
@@ -181,14 +181,14 @@ def openForm(name_prefix) -> str:
 def start():
 
     # 设置cookie，cookie从浏览器里访问图片地址然后拿
-    cookie = MyConfig.PrivateConfig.popoDocumentImageCookie
-    myName = MyConfig.PrivateConfig.nickname
+    cookie = PrivateConfig.popoDocumentImageCookie
+    myName = PrivateConfig.nickname
     global imgName
     # 为空时根据标题生成拼音，否则使用自定义名称
     #imgName = "ruhezidingyilianjieqi_0807_"
     # 定义旧文件夹和新文件夹
-    old_md = os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/旧.md')
-    new_md = os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/新.md')
+    old_md = os.path.join(PublicConfig.project_root,'files/下载popo图片/旧.md')
+    new_md = os.path.join(PublicConfig.project_root,'files/下载popo图片/新.md')
 
     # 检查old_md文件是否存在，如果不存在则创建。
     if not os.path.exists(old_md):
@@ -199,14 +199,14 @@ def start():
     #创建修改后的md文件
     shutil.copy(old_md, new_md)
 
-    if not os.path.exists(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/assets')):
-        os.mkdir(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/assets'))
+    if not os.path.exists(os.path.join(PublicConfig.project_root,'files/下载popo图片/assets')):
+        os.mkdir(os.path.join(PublicConfig.project_root,'files/下载popo图片/assets'))
     # 如果assets文件夹下有文件，则提示是否需要先清空文件夹
-    if len(os.listdir(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/assets'))) > 0:
+    if len(os.listdir(os.path.join(PublicConfig.project_root,'files/下载popo图片/assets'))) > 0:
         if input("assets文件夹下有文件，是否清空？（y/n）：").lower() == 'y':
-            shutil.rmtree(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/assets'))
-            os.mkdir(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片/assets'))
+            shutil.rmtree(os.path.join(PublicConfig.project_root,'files/下载popo图片/assets'))
+            os.mkdir(os.path.join(PublicConfig.project_root,'files/下载popo图片/assets'))
     download_images()
 
     #弹出文件夹
-    os.startfile(os.path.join(MyConfig.PublicConfig.project_root,'files/下载popo图片'))
+    os.startfile(os.path.join(PublicConfig.project_root,'files/下载popo图片'))

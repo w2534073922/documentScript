@@ -8,7 +8,8 @@ from urllib.parse import quote_plus
 
 import requests
 
-from config import MyConfig
+from myConfig import MyConfig
+from myConfig.MyConfig import PublicConfig
 
 
 # 复制文件夹，并跳过指定文件或文件夹
@@ -42,7 +43,7 @@ def copyFolder(src_folder, dest_folder, skip_list):
 # 输入参数 styleText：样式文本
 def batchAddMarkdownStyle(markdownFolder,styleText):
     if styleText == "" or styleText == None:
-        styleText = MyConfig.PublicConfig.markdownStyle
+        styleText = PublicConfig.markdownStyle
     for root, dirs, files in os.walk(markdownFolder):
         for file in files:
             if file.endswith(".md"):
@@ -83,7 +84,7 @@ def compress_to_tar_gz(Folder_or_fileList, output_path,fileName, packName):
 
 def mergeDoc(docs_folder, output_folder=None,isDebug=None):
     # 屏蔽的文件夹和文件列表
-    skip_items = [".vuepress", "999.others",  "README.md"]
+    skip_items = [".vuepress",".vitepress", "999.others",  "README.md"]
     # 最后导出的文件名 后缀是创建时间
     markdownName = "Codewave智能开发平台使用手册_"+datetime.datetime.now().strftime("%Y-%m%d-%H%M")+".md"
     # 拼接输出文件的绝对路径
@@ -132,7 +133,7 @@ def getAllMarkdownFileByFolder(markdown_folderdocs_folder):
     return markdow_file_list
 def getAllDocContent(docs_folder):
     # 屏蔽的文件夹和文件列表
-    skip_items = [".vuepress", "999.others", "README.md"]
+    skip_items = [".vuepress",".vitepress", "999.others", "README.md"]
     content = ""
     # 遍历当前文件夹下的所有文件
     for filename in os.listdir(docs_folder):
@@ -242,7 +243,7 @@ def downloadImgByTxt():
 def removeInvalidImg(folder_path):
 
     imgPattern = r"!\[.*?\]\((.*?)\)|<img.*?src=[\"\'](.*?)[\"\'].*?>"
-    skip_items = [".vuepress", "999.others", "README.md", "99.参考"]
+    skip_items = MyConfig.PublicConfig.skip_items
     for root, dirs, files in os.walk(os.path.join(folder_path, "docs")):
         # 跳过该文件/夹
         if any(blocked_item in root or blocked_item in files for blocked_item in skip_items):
@@ -250,7 +251,25 @@ def removeInvalidImg(folder_path):
 
     #如果输入docs则工作目录为上一级，否则不变
 
-    #
+# 获取文件夹下的所有markdown文件清单
+def getAllMarkdownFileList(folder_path):
+    skip_items = MyConfig.PublicConfig.skip_items
+
+    markdown_file_list = []
+    for root, dirs, files in os.walk(folder_path):
+        # 跳过需要排除的文件/夹
+        if any(blocked_item in root for blocked_item in skip_items):
+            continue
+
+        for file in files:
+            # 检查文件扩展名是否为 .md
+            if file.endswith('.md'):
+                # 构建完整的文件路径
+                file_path = os.path.join(root, file)
+                markdown_file_list.append(file_path)
+
+    return markdown_file_list
+
 
 if __name__ == '__main__':
     print(getAllDocContent())

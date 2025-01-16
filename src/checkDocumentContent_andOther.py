@@ -15,7 +15,8 @@ import win32api
 from git import Repo
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
-from config import MyConfig
+
+from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src.exportRepositoryFiles import outputImgList
 
 docCount = 0
@@ -49,7 +50,7 @@ def search_markdown_files(folder_path,spikNote):
     #imgPattern = r"!\[.*?\]\((.*?)\)|<img.*?src=[\"\'](.*?)[\"\'].*?>"
     imgPattern = r"!\[.*?\]\(([^)]*\.\.[^)]*)\)|<img.*?\ssrc=[\"\'](.*?)[\"\'].*?>"
     #需要跳过读取的文件或文件夹
-    skip_items = [".vuepress", "999.others", "README.md","0.成长地图.md"]
+    skip_items = [".vuepress",".vitepress", "999.others", "README.md","0.成长地图.md"]
 
     global docCount
     for root, dirs, files in os.walk(os.path.join(folder_path,"docs")):
@@ -92,7 +93,7 @@ def search_markdown_files(folder_path,spikNote):
                                 continue
 
                         #这个是考试认证的popo文档链接，需要排除掉
-                        excludedLinkList = MyConfig.PublicConfig.needExcludedPopoLinkList
+                        excludedLinkList =  PublicConfig.needExcludedPopoLinkList
                         # 检查是否有popo文档链接
                         if "docs.popo.netease.com" in line and not any(
                             excludedLink in line for excludedLink in excludedLinkList):
@@ -237,15 +238,20 @@ def checkDocumentMappings(documentProjectPath,tenementUrl, cookie ,isDebug=False
                         elif "version" in file_path and os.path.exists(os.path.join(documentProjectPath,'docs',file_path.split('&version')[0])):
                             print("\033[31m路径不应带版本号后缀:\033[0m"+str(mapping))
                         else:
-                            #print("\033[31m路径失效:\033[0m"+str(mapping))
+                            print("\033[31m路径失效:\033[0m"+str(mapping))
                             #temp = list(mapping.values())
                             temp =dict(mapping)
+                            temp.pop("id")
                             temp.pop("comment")
                             temp.pop("description")
                             temp.pop("previewHref")
                             temp = list(temp.values())
+                            # print(temp[3])
+                            # print(temp[4])
                             temp[3] = unquote(temp[3])
+                            # temp[3] = temp[3]
                             invalidMappingTable.add_row(temp)
+
         else:
             if response_data["msg"] == "用户未登录或已失效":
                 print(f'\033[31m用户未登录或登录状态已失效，可能是Cookie过期了，去浏览器里重新拿cookie试试，接口为document-mappings（确认拿cookie的租户与检测的租户地址一致）\033[0m')
@@ -303,7 +309,7 @@ def mergeDocument(documentProjectPath):
 
     global mergeDocumentCcontent
     imgPattern = r"!\[.*?\]\(([^)]*\.\.[^)]*)\)|<img.*?src=[\"\'](.*?)[\"\'].*?>"
-    markdownName = "Codewave智能开发平台使用手册_" + datetime.datetime.now().strftime("%Y-%m%d-%H%M") + ".md"
+    markdownName = "Codewave智能开发平台使用手册_" + datetime.now().strftime("%Y-%m%d-%H%M") + ".md"
     outputPath = input("输入导出合并后文档的文件夹路径：")
     if not os.path.isdir(outputPath):
         print("输入的导出文件夹不存在")
@@ -381,7 +387,7 @@ def find_oldest_updated_docs(repo_path, count=50):
     file_dates = {}
     filesCount = 0
     filesSum = sum(1 for _, _, files in os.walk(docs_path) for file in files if file.endswith(('.md')))-2
-    skip_items = [".vuepress","README.md","0.成长地图.md"]
+    skip_items = [".vuepress",".vitepress","README.md","0.成长地图.md"]
     # 遍历docs目录下的所有文件
     for root, dirs, files in os.walk(docs_path):
         if os.path.basename(root) in skip_items:
@@ -407,7 +413,7 @@ def find_oldest_updated_docs(repo_path, count=50):
     oldest_files = sorted(oldest_files.items(), key=lambda x: x[1])[:count]
     print("\033[36m最近变更时间最久远的文件：\033[m")
     for oldest_file in oldest_files:
-        print(f"{datetime.datetime.fromtimestamp(oldest_file[1])}\t\t{oldest_file[0]}")
+        print(f"{datetime.fromtimestamp(oldest_file[1])}\t\t{oldest_file[0]}")
     # 构建最终结果路径，并返回
     return [os.path.join('docs', filename) for filename, _ in oldest_files]
 
@@ -429,7 +435,7 @@ def get_commit_date_for_files(repo_path, files,thread_id):
     print(f"Thread {thread_id} finished in {end_time - start_time:.2f} seconds.")
     return file_dates
 
-def find_oldest_updated_docs_multithread(repo_path, count=50, num_threads=MyConfig.PrivateConfig.threadsNum):
+def find_oldest_updated_docs_multithread(repo_path, count=50, num_threads=PrivateConfig.threadsNum):
     print(f"开始获取文档最后的提交日期，线程数{num_threads}，处理中请等待...")
     start_time_total = time.time()
     """
@@ -444,7 +450,7 @@ def find_oldest_updated_docs_multithread(repo_path, count=50, num_threads=MyConf
         print("在存储库中找不到“docs”目录")
         return []
 
-    skip_items = [".vuepress", "README.md", "0.成长地图.md"]
+    skip_items = [".vuepress",".vitepress", "README.md", "0.成长地图.md"]
     all_files = [
         os.path.join(root[len(repo.working_dir)+1:], file)
         for root, dirs, files in os.walk(docs_path)
@@ -475,7 +481,7 @@ def find_oldest_updated_docs_multithread(repo_path, count=50, num_threads=MyConf
     oldest_files = sorted(oldest_files.items(), key=lambda x: x[1])[:count]
     print("\033[36m最近变更时间最久远的文件（不包含版本更新说明）：\033[m")
     for oldest_file in oldest_files:
-        print(f"{datetime.datetime.fromtimestamp(oldest_file[1])} \t\t {oldest_file[0]}")
+        print(f"{datetime.fromtimestamp(oldest_file[1])} \t\t {oldest_file[0]}")
     print(f"执行时间: {time.time() - start_time_total:.2f} 秒")
 
     return [os.path.join('docs', filename) for filename, _ in oldest_files]
@@ -511,15 +517,15 @@ def get_changed_files(repoPath, days):
 
 def start():
     #必填，项目文件夹路径
-    documentProjectPath = MyConfig.PrivateConfig.repoPath
+    documentProjectPath = PrivateConfig.repoPath
     #documentProjectPath = 'D:\\工作\\文档相关\\客户部署\\codewave文档3.8-markdown包-20240705'
     #以下参数为可选，检测IDE中的文档映射链接时用到
 
     #租户地址
     #tenementUrl="https://newtest.lcap.codewave-test.163yun.com/"
-    tenementUrl = MyConfig.PrivateConfig.codewaveUrl
+    tenementUrl = PrivateConfig.codewaveUrl
     #cookie
-    cookie = MyConfig.PrivateConfig.accountCookie
+    cookie = PrivateConfig.accountCookie
 
     search_markdown_files(documentProjectPath, True)
 
@@ -548,7 +554,7 @@ def start():
     elif select == "3":
         append_line_to_markdowns("<!-- 强制更新文档用 -->")
     elif select == "4":
-        append_line_to_markdowns(MyConfig.PublicConfig.markdownStyle)
+        append_line_to_markdowns(PublicConfig.markdownStyle)
     elif select == "5":
         #find_oldest_updated_docs(documentProjectPath)
         # num_threads参数为线程数，根据自己的电脑性能来配置
@@ -563,3 +569,6 @@ def start():
     else:
         print("\033[31m输入有误\033[0m")
         exit(0)
+
+if __name__ == '__main__':
+    start()

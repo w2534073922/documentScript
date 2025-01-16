@@ -36,21 +36,9 @@ def replace_links(table_file_path, md_folder_path):
             if file_extension not in ['.md']:  # 可根据实际支持的文本文件类型添加更多扩展名
                 continue  # 跳过非文本文件
             doc_name = file
-            # 检测文档文件编码
-            with open(file_path, 'rb') as f:
-                encoding_result = chardet.detect(f.read())
-            detected_encoding = encoding_result.get('encoding')
-            if detected_encoding is None:
-                print(f"无法检测文档 {file_path} 的编码格式，请检查文件是否正确。")
-                continue
-            try:
-                with open(file_path, 'r', encoding=detected_encoding) as f:
-                    content = f.read()
-            except UnicodeDecodeError:
-                print(f"按照检测的编码 {detected_encoding} 无法正确读取文档 {file_path}，尝试使用其他通用编码进行读取。")
-                fallback_encoding = 'latin-1'
-                with open(file_path, 'r', fallback_encoding) as f:
-                    content = f.read()
+
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
 
             # 使用正则表达式更精准地匹配和替换链接（假设文档中的链接格式比较规范，可根据实际调整正则表达式）
             link_pattern = re.compile(r'\[.*?\]\((.*?)\)')  # 匹配类似Markdown链接格式的正则表达式，如果链接格式不同需调整
@@ -77,7 +65,7 @@ def replace_links(table_file_path, md_folder_path):
                 total_replace_count += current_replace_count
 
             # 将替换后的内容写回原文件
-            with open(file_path, 'w', encoding=detected_encoding) as f:
+            with open(file_path, 'w', encoding='utf-8' ) as f:
                 f.write(updated_content)
 
     print(f"实际替换总数量: {total_replace_count}")
@@ -92,7 +80,9 @@ def replace_links(table_file_path, md_folder_path):
 
 
 if __name__ == "__main__":
-    table_file_path = input("请输入表格文件的地址（CSV格式等）：")
-    md_folder_path = input("请输入存放文档的文件夹地址：")
+    # table_file_path = input("请输入表格文件的地址（CSV格式等）：")
+    # md_folder_path = input("请输入存放文档的文件夹地址：")
+    table_file_path = r"D:\工作\文档相关\上传\1213\191507_文档3.12.xlsx"
+    md_folder_path = r"D:\工作\文档相关\low-code-doc\docs"
     replace_links(table_file_path, md_folder_path)
     print("链接替换完成！")

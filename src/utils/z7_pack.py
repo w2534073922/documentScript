@@ -2,11 +2,12 @@
 import os
 import requests
 
-from config import MyConfig
+from myConfig import MyConfig
+from myConfig.MyConfig import PublicConfig
 
 
 def get7zPath():
-    z7FilePath = os.path.join(MyConfig.PublicConfig.project_root,"files/工具软件/7z.exe")
+    z7FilePath = os.path.join(PublicConfig.project_root,"files/工具软件/7z.exe")
     # 如果files/工具软件目录下没有7z.exe，就先下载文件
     if not os.path.exists(z7FilePath):
         download_url = "https://www.7-zip.org/a/7zr.exe"
