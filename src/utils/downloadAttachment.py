@@ -75,6 +75,10 @@ def start():
 
         new_list = list(
             map(lambda x: [os.path.basename(urllib.parse.unquote(x)),x,urllib.parse.unquote(x),''], links))
+
+        # 根据文件名进行去重
+        new_list = list({sub_list[0]: sub_list for sub_list in new_list}.values())
+
         # print(new_list)
         # print(type([['文件名', '原链接', '新链接']]))
         # print(type(new_list))
