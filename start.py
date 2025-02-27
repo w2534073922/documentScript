@@ -1,4 +1,4 @@
-from src import exportRepositoryFiles, checkDocumentContent_andOther, downloadMarkdownImageToLocal
+from src import exportRepositoryFiles, checkDocumentContent_andOther, downloadMarkdownImageToLocal, checkStudyMap
 from src.utils import downloadAttachment, markdownToPdf, privateFileLinkWriteDocument
 
 if __name__ == '__main__':
@@ -24,3 +24,5 @@ if __name__ == '__main__':
         privateFileLinkWriteDocument.start()
     elif select == "6":
         markdownToPdf.start()
+    elif select == "7":
+        checkStudyMap.start()
