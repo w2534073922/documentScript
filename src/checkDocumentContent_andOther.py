@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
 from myConfig.MyConfig import PrivateConfig, PublicConfig
+from src import checkStudyMap
 from src.exportRepositoryFiles import outputImgList
 
 docCount = 0
@@ -297,7 +298,8 @@ def copyValidImg(documentProjectPath):
 
 #将所有markdown合并成一个markdown，并将所有图片路径进行统一的转换
 def mergeDocument(documentProjectPath):
-
+    if not input("当前文档路径为："+documentProjectPath+"\t确认（y/n）").lower() == "y":
+        documentProjectPath = input("输入文档路径：")
     def replace_path(match):
         if match.group(1)  is not None:
             relative_path = match.group(1)
@@ -542,6 +544,7 @@ def start():
 \t5、搜索前50名最久未更新的文档（执行时间较长）
 \t6、按图片列表导出图片（用于提取其他分支没有的图片）
 \t7、搜索前x天内发生变化的文档
+\t8、检查成长地图失效链接
 \n输入数字选择：'''
 
     #select = inputimeout(prompt=hintText,timeout=12)
@@ -566,6 +569,8 @@ def start():
     elif select == "7":
         x_days = int(input("输入从现在向前查找的天数："))
         get_changed_files(repoPath=documentProjectPath,days=x_days)
+    elif select == "8":
+        checkStudyMap.start()
     else:
         print("\033[31m输入有误\033[0m")
         exit(0)

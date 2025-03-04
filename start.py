@@ -24,5 +24,3 @@ if __name__ == '__main__':
         privateFileLinkWriteDocument.start()
     elif select == "6":
         markdownToPdf.start()
-    elif select == "7":
-        checkStudyMap.start()
