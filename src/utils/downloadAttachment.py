@@ -1,6 +1,7 @@
 import os
 import shutil
 import urllib
+from datetime import datetime
 from urllib.parse import unquote
 
 import mistune
@@ -87,8 +88,10 @@ def start():
         for row in data:
             ws.append(row)
         # 保存工作簿
-        outputPath = input("输入表格输出路径：")
-        wb.save( os.path.join(outputPath,"文件链接清单.xlsx"))
-
-    # 弹出文件夹
-    os.startfile(download_dir)
+        outputPath = input("输入导出表格的文件夹：")
+        excelPath = os.path.join(outputPath,"文件链接清单_"+datetime.now().strftime("%Y%m%d%H%M%S")+".xlsx")
+        wb.save(excelPath )
+        os.startfile(os.path.dirname(excelPath))
+    else:
+        # 弹出文件夹
+        os.startfile(download_dir)
