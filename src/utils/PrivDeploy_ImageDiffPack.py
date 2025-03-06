@@ -85,21 +85,13 @@ def compress_files(files, assets_dir, output_base_name):
     :param assets_dir: 图片所在目录
     :param output_base_name: 输出文件名基础部分
     """
-    if len(files) == 1:
-        output_name = f"{output_base_name}.tar.gz"
+    for i, part_files in enumerate(files, start=1):
+        output_name = f"{output_base_name}.tar.gz.{str(i).zfill(3)}"
         with tarfile.open(output_name, "w:gz") as tar:
-            for file in files[0]:
+            for file in part_files:
                 file_path = os.path.join(assets_dir, file)
                 tar.add(file_path, arcname=file)
         print(f"压缩完成，输出文件: {output_name}")
-    else:
-        for i, part_files in enumerate(files, start=1):
-            output_name = f"{output_base_name}.tar.gz.{str(i).zfill(3)}"
-            with tarfile.open(output_name, "w:gz") as tar:
-                for file in part_files:
-                    file_path = os.path.join(assets_dir, file)
-                    tar.add(file_path, arcname=file)
-            print(f"分卷压缩完成，输出文件: {output_name}")
 
 
 def main(old_md_dir, new_md_dir, new_assets_dir):
