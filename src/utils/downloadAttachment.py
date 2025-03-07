@@ -9,12 +9,15 @@ import requests
 from bs4 import BeautifulSoup
 from openpyxl.workbook import Workbook
 
-from myConfig import MyConfig
 from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src.utils import MyUtil
 
 def start():
-    markdown_text = MyUtil.getAllDocContent(os.path.join(PrivateConfig.repoPath, "docs"))
+    docFloder = os.path.join(PrivateConfig.repoPath, "docs")
+    print("文档文件夹地址默认为："+docFloder)
+    if input("是否使用该路径：（y/n）：") == "n":
+        docFloder = input("请输入文档文件夹地址：")
+    markdown_text = MyUtil.getAllDocContent(docFloder)
 
     # markdown转HTML
     html = BeautifulSoup(mistune.html(markdown_text), 'html.parser')
@@ -28,10 +31,9 @@ def start():
     video_links = []
     for video_tag in video_tags:
         video_links.append(video_tag['src'])
-    if input("是否包含视频？(y)：") == "y":
-        # 合并列表
-        links.extend(video_links)
-        print(f"搜索到{len(video_links)}个视频")
+    # 合并列表
+    links.extend(video_links)
+    print(f"搜索到{len(video_links)}个视频")
 
     # 创建一个目录用于保存下载的文件
     download_dir = os.path.join(PublicConfig.project_root, 'files/下载文档中心附件')
@@ -39,9 +41,8 @@ def start():
 
     # 如果目录下有文件则提示是否需要先清空
     if len(os.listdir(download_dir)) > 0:
-        if input("下载目录下有文件，是否清空？（y/n）：").lower() == 'y':
-            shutil.rmtree(download_dir)
-            os.mkdir(download_dir)
+        shutil.rmtree(download_dir)
+        os.mkdir(download_dir)
 
     if input("下载文件(y)  生成excel(n)：").lower() == 'y':
         isOnlyDownload = True
@@ -95,3 +96,6 @@ def start():
     else:
         # 弹出文件夹
         os.startfile(download_dir)
+
+if __name__ == '__main__':
+    start()
