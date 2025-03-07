@@ -325,7 +325,7 @@ import os
 import tarfile
 
 
-def compress_files_to_tar_gz(source_folder, output_basePath, is_compress_volumes=False):
+def compress_files_to_tar_gz(source_folder, output_basePath, is_compress_volumes=True):
     """
     将指定文件夹下的所有文件压缩打包成tar.gz格式。
 

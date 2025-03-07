@@ -60,10 +60,13 @@ def split_files_by_size(files, assets_dir, max_size=200 * 1024 * 1024):
     :param max_size: 最大分卷大小（字节），默认 200MB
     :return: 分割后的文件列表
     """
+    # 过滤不存在的文件
+    valid_files = [file for file in files if os.path.exists(os.path.join(assets_dir, file))]
+
     split_files = []
     current_files = []
     current_size = 0
-    for file in files:
+    for file in valid_files:
         file_path = os.path.join(assets_dir, file)
         file_size = os.path.getsize(file_path)
         if current_size + file_size > max_size:
