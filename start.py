@@ -1,4 +1,5 @@
-from src import exportRepositoryFiles, checkDocumentContent_andOther, downloadMarkdownImageToLocal, checkStudyMap
+from src import exportRepositoryFiles, checkDocumentContent_andOther, downloadMarkdownImageToLocal, checkStudyMap, \
+    outputPrivateDeploymentResourceFile
 from src.utils import downloadAttachment, markdownToPdf, privateFileLinkWriteDocument
 
 if __name__ == '__main__':
@@ -10,6 +11,7 @@ if __name__ == '__main__':
     4、导出文档中的附件和视频
     5、根据更新了私有化附件链接后的Excel修改文档中的链接
     6、markdown文件夹生成PDF
+    7、私有化部署导出增量资源
     ''')
     select = input("输入选择：")
     if select == "1":
@@ -24,3 +26,5 @@ if __name__ == '__main__':
         privateFileLinkWriteDocument.start()
     elif select == "6":
         markdownToPdf.start()
+    elif select == "7":
+        outputPrivateDeploymentResourceFile.start()
