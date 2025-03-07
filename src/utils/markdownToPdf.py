@@ -43,7 +43,7 @@ def markdownToHtml(input_file_path, output_file_path):
     mate = f'''
 <head>
     <meta charset="utf-8" />
-    <link rel="stylesheet" type="text/css" href="{PublicConfig.project_root}\config\pdf.css">
+    <link rel="stylesheet" type="text/css" href="{PublicConfig.project_root}\myConfig\pdf.css">
 </head>
     '''
     html_content = mate + html_content
