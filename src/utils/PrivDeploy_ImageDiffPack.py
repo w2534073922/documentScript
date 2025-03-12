@@ -1,9 +1,6 @@
 import os
 import re
-import tarfile
 import shutil
-import subprocess
-
 
 def get_image_names_from_md_files(md_dir):
     """
@@ -26,7 +23,6 @@ def get_image_names_from_md_files(md_dir):
                     print(f"文件 {file_path} 未找到。")
     return image_names
 
-
 def get_new_images(old_image_names, new_image_names):
     """
     获取新版本新增的图片
@@ -35,7 +31,6 @@ def get_new_images(old_image_names, new_image_names):
     :return: 新增图片名称列表
     """
     return [image for image in new_image_names if image not in old_image_names]
-
 
 def get_total_size(files, assets_dir):
     """
@@ -50,7 +45,6 @@ def get_total_size(files, assets_dir):
         if os.path.exists(file_path):
             total_size += os.path.getsize(file_path)
     return total_size
-
 
 def copy_new_images(new_images, new_assets_dir, storage_dir):
     """
@@ -70,43 +64,6 @@ def copy_new_images(new_images, new_assets_dir, storage_dir):
             print(f"已复制 {image} 到 {destination_path}")
     return assets_folder
 
-
-def compress_7z(tar_file_path, max_size=200 * 1024 * 1024):
-    """
-    使用 7z 对 tar 文件进行分卷压缩
-    :param tar_file_path: tar 文件路径
-    :param max_size: 最大分卷大小（字节），默认 200MB
-    """
-    max_size_str = f"{max_size // (1024 * 1024)}m"
-    output_7z_path = f"{tar_file_path}.7z"
-    try:
-        cmd = ['7z', 'a', '-v' + max_size_str, output_7z_path, tar_file_path]
-        subprocess.run(cmd, check=True)
-        print(f"7z 分卷压缩完成，输出文件以 {output_7z_path} 开头")
-    except subprocess.CalledProcessError as e:
-        print(f"7z 压缩过程中出现错误: {e}")
-
-
-def compress_assets_dir(assets_dir, output_base_name):
-    """
-    将 assets 文件夹打包为 tar 文件，再将 tar 文件以 7z 格式分卷压缩
-    :param assets_dir: 要压缩的 assets 文件夹
-    :param output_base_name: 输出文件名基础部分
-    """
-    storage_dir = os.path.dirname(assets_dir)
-    tar_file_name = os.path.join(storage_dir, f"{output_base_name}.tar")
-    with tarfile.open(tar_file_name, "w") as tar:
-        for root, dirs, files in os.walk(assets_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, assets_dir)
-                tar.add(file_path, arcname=arcname)
-    print(f"第一次打包完成，输出文件: {tar_file_name}")
-
-    # 7z 分卷压缩
-    compress_7z(tar_file_name)
-
-
 def main(old_md_dir, new_md_dir, new_assets_dir, storage_dir):
     # 获取原文档和新文档中引用的图片名称
     old_image_names = get_image_names_from_md_files(old_md_dir)
@@ -124,12 +81,7 @@ def main(old_md_dir, new_md_dir, new_assets_dir, storage_dir):
     print(f"新增图片总大小: {total_size} 字节")
 
     # 复制新增图片到指定存储目录下的 assets 文件夹
-    assets_folder = copy_new_images(new_images, new_assets_dir, storage_dir)
-
-    # 压缩 assets 文件夹
-    output_base_name = "assets"
-    compress_assets_dir(assets_folder, output_base_name)
-
+    copy_new_images(new_images, new_assets_dir, storage_dir)
 
 if __name__ == "__main__":
     # 输入原文档地址
