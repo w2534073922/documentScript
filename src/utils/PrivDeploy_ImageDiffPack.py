@@ -1,8 +1,8 @@
 import os
 import re
-import shutil
 import tarfile
-from math import ceil
+import shutil
+import subprocess
 
 
 def get_image_names_from_md_files(md_dir):
@@ -52,52 +52,62 @@ def get_total_size(files, assets_dir):
     return total_size
 
 
-def split_files_by_size(files, assets_dir, max_size=200 * 1024 * 1024):
+def copy_new_images(new_images, new_assets_dir, storage_dir):
     """
-    按指定大小分割文件列表
-    :param files: 文件列表
-    :param assets_dir: 图片所在目录
+    将新增图片复制到指定的存储目录下的 assets 文件夹中
+    :param new_images: 新增图片名称列表
+    :param new_assets_dir: 新增图片所在目录
+    :param storage_dir: 存储新增图片的根目录
+    """
+    assets_folder = os.path.join(storage_dir, 'assets')
+    if not os.path.exists(assets_folder):
+        os.makedirs(assets_folder)
+    for image in new_images:
+        source_path = os.path.join(new_assets_dir, image)
+        if os.path.exists(source_path):
+            destination_path = os.path.join(assets_folder, image)
+            shutil.copy2(source_path, destination_path)
+            print(f"已复制 {image} 到 {destination_path}")
+    return assets_folder
+
+
+def compress_7z(tar_file_path, max_size=200 * 1024 * 1024):
+    """
+    使用 7z 对 tar 文件进行分卷压缩
+    :param tar_file_path: tar 文件路径
     :param max_size: 最大分卷大小（字节），默认 200MB
-    :return: 分割后的文件列表
     """
-    # 过滤不存在的文件
-    valid_files = [file for file in files if os.path.exists(os.path.join(assets_dir, file))]
-
-    split_files = []
-    current_files = []
-    current_size = 0
-    for file in valid_files:
-        file_path = os.path.join(assets_dir, file)
-        file_size = os.path.getsize(file_path)
-        if current_size + file_size > max_size:
-            split_files.append(current_files)
-            current_files = [file]
-            current_size = file_size
-        else:
-            current_files.append(file)
-            current_size += file_size
-    if current_files:
-        split_files.append(current_files)
-    return split_files
+    max_size_str = f"{max_size // (1024 * 1024)}m"
+    output_7z_path = f"{tar_file_path}.7z"
+    try:
+        cmd = ['7z', 'a', '-v' + max_size_str, output_7z_path, tar_file_path]
+        subprocess.run(cmd, check=True)
+        print(f"7z 分卷压缩完成，输出文件以 {output_7z_path} 开头")
+    except subprocess.CalledProcessError as e:
+        print(f"7z 压缩过程中出现错误: {e}")
 
 
-def compress_files(files, assets_dir, output_base_name):
+def compress_assets_dir(assets_dir, output_base_name):
     """
-    压缩文件
-    :param files: 文件列表
-    :param assets_dir: 图片所在目录
+    将 assets 文件夹打包为 tar 文件，再将 tar 文件以 7z 格式分卷压缩
+    :param assets_dir: 要压缩的 assets 文件夹
     :param output_base_name: 输出文件名基础部分
     """
-    for i, part_files in enumerate(files, start=1):
-        output_name = f"{output_base_name}.tar.gz.{str(i).zfill(3)}"
-        with tarfile.open(output_name, "w:gz") as tar:
-            for file in part_files:
-                file_path = os.path.join(assets_dir, file)
-                tar.add(file_path, arcname=file)
-        print(f"压缩完成，输出文件: {output_name}")
+    storage_dir = os.path.dirname(assets_dir)
+    tar_file_name = os.path.join(storage_dir, f"{output_base_name}.tar")
+    with tarfile.open(tar_file_name, "w") as tar:
+        for root, dirs, files in os.walk(assets_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                arcname = os.path.relpath(file_path, assets_dir)
+                tar.add(file_path, arcname=arcname)
+    print(f"第一次打包完成，输出文件: {tar_file_name}")
+
+    # 7z 分卷压缩
+    compress_7z(tar_file_name)
 
 
-def main(old_md_dir, new_md_dir, new_assets_dir):
+def main(old_md_dir, new_md_dir, new_assets_dir, storage_dir):
     # 获取原文档和新文档中引用的图片名称
     old_image_names = get_image_names_from_md_files(old_md_dir)
     new_image_names = get_image_names_from_md_files(new_md_dir)
@@ -111,16 +121,14 @@ def main(old_md_dir, new_md_dir, new_assets_dir):
 
     # 计算新增图片总大小
     total_size = get_total_size(new_images, new_assets_dir)
+    print(f"新增图片总大小: {total_size} 字节")
 
-    # 按 200MB 分卷
-    if total_size > 200 * 1024 * 1024:
-        split_new_images = split_files_by_size(new_images, new_assets_dir)
-    else:
-        split_new_images = [new_images]
+    # 复制新增图片到指定存储目录下的 assets 文件夹
+    assets_folder = copy_new_images(new_images, new_assets_dir, storage_dir)
 
-    # 压缩文件
+    # 压缩 assets 文件夹
     output_base_name = "assets"
-    compress_files(split_new_images, new_assets_dir, output_base_name)
+    compress_assets_dir(assets_folder, output_base_name)
 
 
 if __name__ == "__main__":
@@ -130,5 +138,7 @@ if __name__ == "__main__":
     new_md_dir = input("请输入新 docs 文件夹地址: ")
     # 输入新版 assets 地址
     new_assets_dir = input("请输入新版 assets 地址: ")
+    # 输入存储新增图片的地址
+    storage_dir = input("请输入存储新增图片的地址: ")
 
-    main(old_md_dir, new_md_dir, new_assets_dir)
+    main(old_md_dir, new_md_dir, new_assets_dir, storage_dir)
