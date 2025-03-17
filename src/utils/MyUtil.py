@@ -126,14 +126,20 @@ def mergeDoc(docs_folder, output_folder=None,isDebug=None):
 #获取文件夹下所有markdown文件列表
 def getAllMarkdownFileByFolder(markdown_folderdocs_folder):
     markdow_file_list = []
-    for root, _, files in os.walk(markdown_folderdocs_folder):
+    skip_items = MyConfig.PublicConfig.skip_items
+    for root, dirs, files in os.walk(markdown_folderdocs_folder):
+        # 跳过在skip_items中的文件夹
+        dirs[:] = [d for d in dirs if d not in skip_items]
+
         for file in files:
-            if file.endswith('.md'):
+            # 跳过在skip_items中的文件
+            if file not in skip_items and file.endswith('.md'):
                 markdow_file_list.append(os.path.join(root, file))
     return markdow_file_list
+
 def getAllDocContent(docs_folder):
     # 屏蔽的文件夹和文件列表
-    skip_items = [".vuepress",".vitepress", "999.others", "README.md"]
+    skip_items = MyConfig.PublicConfig.skip_items
     content = ""
     # 遍历当前文件夹下的所有文件
     for filename in os.listdir(docs_folder):
