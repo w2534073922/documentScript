@@ -32,6 +32,9 @@ mergeDocumentCcontent = ""
     2、可能有一些脚本扫描不到的错误路径，需要收集这类情况，补充完善脚本。
 '''
 def search_markdown_files(folder_path,spikNote):
+
+    isCheckImg = input("是否需要检查图片链接：（y/n）").lower()=="y"
+
     global mergeDocumentCcontent
     # 判断传入的路径是否正确
     if not os.path.exists(folder_path):
@@ -123,39 +126,40 @@ def search_markdown_files(folder_path,spikNote):
 
                         #匹配文档中失效的图片
                         #print("\033[36m开始扫描文档中的失效图片...\033[0m")
-                        imgMatches = re.finditer(imgPattern, line)
-                        for imgMatch in imgMatches:
-                            img_path_list = imgMatch.groups()
-                            img_path_list = [x for x in img_path_list if x is not None]
-                            #print(img_path_list)
-                            #print(file_path)
-                            for img_path in img_path_list:
-                                # if "sy_pc2.png" in img_path:
-                                #     print("目标字符串包含子串",img_path)
-                                #print("图片：",img_path)
-                                docImgSet.add(os.path.basename(img_path))
+                        if isCheckImg:
+                            imgMatches = re.finditer(imgPattern, line)
+                            for imgMatch in imgMatches:
+                                img_path_list = imgMatch.groups()
+                                img_path_list = [x for x in img_path_list if x is not None]
+                                #print(img_path_list)
+                                #print(file_path)
+                                for img_path in img_path_list:
+                                    # if "sy_pc2.png" in img_path:
+                                    #     print("目标字符串包含子串",img_path)
+                                    #print("图片：",img_path)
+                                    docImgSet.add(os.path.basename(img_path))
 
-                                absolute_ImgPath = os.path.abspath(os.path.join(root, img_path))
-                                #print(absolute_ImgPath)
+                                    absolute_ImgPath = os.path.abspath(os.path.join(root, img_path))
+                                    #print(absolute_ImgPath)
 
-                                #由于在Windows中不区分文件名大小写，本地预览markdown时，图片名称中的大小写无关紧要，但是在线上是区分大小写的，此步骤基于区分大小写来判断文档中引用的图片是否存在
-                                if os.path.exists(absolute_ImgPath):
-                                    actualFileName = os.path.basename(win32api.GetLongPathNameW(win32api.GetShortPathName(absolute_ImgPath)))
-                                    actualFileName = re.split("\.", os.path.basename(actualFileName), 1)[0]
-                                    fname = re.split("\.", os.path.basename(absolute_ImgPath), 1)[0]
-                                    if  actualFileName!= fname:
+                                    #由于在Windows中不区分文件名大小写，本地预览markdown时，图片名称中的大小写无关紧要，但是在线上是区分大小写的，此步骤基于区分大小写来判断文档中引用的图片是否存在
+                                    if os.path.exists(absolute_ImgPath):
+                                        actualFileName = os.path.basename(win32api.GetLongPathNameW(win32api.GetShortPathName(absolute_ImgPath)))
+                                        actualFileName = re.split("\.", os.path.basename(actualFileName), 1)[0]
+                                        fname = re.split("\.", os.path.basename(absolute_ImgPath), 1)[0]
+                                        if  actualFileName!= fname:
+
+                                            if file_path.split("docs"+os.path.sep)[1] not in imgDict:
+                                                imgDict[file_path.split("docs"+os.path.sep)[1]] = []
+                                            imgDict[file_path.split("docs"+os.path.sep)[1]].append(("文件名大小写真实文件名不匹配   "+img_path, line_num))
+                                            j = j + 1
+                                    else:
+                                        # print(f"路径不存在：{absolute_ImgPath}")
 
                                         if file_path.split("docs"+os.path.sep)[1] not in imgDict:
                                             imgDict[file_path.split("docs"+os.path.sep)[1]] = []
-                                        imgDict[file_path.split("docs"+os.path.sep)[1]].append(("文件名大小写真实文件名不匹配   "+img_path, line_num))
+                                        imgDict[file_path.split("docs"+os.path.sep)[1]].append((img_path, line_num))
                                         j = j + 1
-                                else:
-                                    # print(f"路径不存在：{absolute_ImgPath}")
-
-                                    if file_path.split("docs"+os.path.sep)[1] not in imgDict:
-                                        imgDict[file_path.split("docs"+os.path.sep)[1]] = []
-                                    imgDict[file_path.split("docs"+os.path.sep)[1]].append((img_path, line_num))
-                                    j = j + 1
 
     print("\n\033[32m输入的文档文件夹路径：\033[0m", folder_path)
     # 输出文档当前分支
@@ -187,22 +191,22 @@ def search_markdown_files(folder_path,spikNote):
                 print(f'\t\t行数 \033[34m{line_num}\033[0m: \033[31m{line}\033[0m')
     else:
         print("\033[32m未发现\033[0m")
-
-    print("\n\033[36m搜索文档中的失效图片地址...\033[0m")
-    if len(imgDict) > 0:
-        print(f"合计 \033[31m{j}\033[0m 个无效图片地址")
-        for file_path, lines in imgDict.items():
-            print(f'\t文件: \033[33m{file_path}\033[0m')
-            for line, line_num in lines:
-                print(f'\t\t行数 \033[34m{line_num}\033[0m: \033[31m{line}\033[0m')
-        invalidImgList = []
-        for images in imgDict.values():
-            for image_path, _ in images:
-                # 使用 os.path.basename() 提取文件名
-                invalidImgList.append(os.path.basename(image_path))
-        print("\033[32m无效图片列表：\033[0m", invalidImgList)
-    else:
-        print("\033[32m未发现\033[0m")
+    if isCheckImg:
+        print("\n\033[36m搜索文档中的失效图片地址...\033[0m")
+        if len(imgDict) > 0:
+            print(f"合计 \033[31m{j}\033[0m 个无效图片地址")
+            for file_path, lines in imgDict.items():
+                print(f'\t文件: \033[33m{file_path}\033[0m')
+                for line, line_num in lines:
+                    print(f'\t\t行数 \033[34m{line_num}\033[0m: \033[31m{line}\033[0m')
+            invalidImgList = []
+            for images in imgDict.values():
+                for image_path, _ in images:
+                    # 使用 os.path.basename() 提取文件名
+                    invalidImgList.append(os.path.basename(image_path))
+            print("\033[32m无效图片列表：\033[0m", invalidImgList)
+        else:
+            print("\033[32m未发现\033[0m")
 
     #print(docImgSet)
 
