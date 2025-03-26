@@ -1,3 +1,4 @@
+import concurrent.futures
 import json
 import os
 import re
@@ -104,8 +105,10 @@ def replaceAbsolutePath(content):
     # print(result)
     return result
 
-def batchToPdf(markdownFolder, outputFolder):
-    #判断输出文件夹下是否有文件，如果有则让用户选择是否需要清空
+def batchToPdf(markdownFolder, outputFolder, batch_size=100):
+    # 线程数量最大为5，不然cpu占用太高
+    max_workers = min(5, os.cpu_count())
+    # 判断输出文件夹下是否有文件，如果有则让用户选择是否需要清空
     if os.listdir(outputFolder):
         print("输出文件夹不为空，是否清空？(y/n)")
         choice = input()
@@ -122,23 +125,33 @@ def batchToPdf(markdownFolder, outputFolder):
     markdownFileList = getAllMarkdownFileByFolder(markdownFolder)
     total_files = len(markdownFileList)  # 获取总文件数
 
-    for index, markdownFile in enumerate(markdownFileList, start=1):
-        # 获取文件名，不带后缀
-        fileNameWithoutExtension = os.path.splitext(os.path.basename(markdownFile))[0]
-        # 计算相对路径（不包括文件名）
-        relativeDir = os.path.relpath(os.path.dirname(markdownFile), markdownFolder)
-        # 创建输出文件夹结构
-        outputDir = os.path.join(outputFolder, relativeDir)
-        os.makedirs(outputDir, exist_ok=True)
-        # 输出文件路径
-        outputFilePath = os.path.join(outputDir, fileNameWithoutExtension + '.pdf')
-        # 转换为HTML并生成PDF
-        html_to_pdf(markdownToHtml(markdownFile, outputFilePath), outputFilePath)
+    # 使用ThreadPoolExecutor来并行处理Markdown文件
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # 分批处理文件
+        for i in range(0, total_files, batch_size):
+            batch_files = markdownFileList[i:i + batch_size]
+            futures = []
+            for index, markdownFile in enumerate(batch_files, start=i + 1):
+                # 获取文件名，不带后缀
+                fileNameWithoutExtension = os.path.splitext(os.path.basename(markdownFile))[0]
+                # 计算相对路径（不包括文件名）
+                relativeDir = os.path.relpath(os.path.dirname(markdownFile), markdownFolder)
+                # 创建输出文件夹结构
+                outputDir = os.path.join(outputFolder, relativeDir)
+                os.makedirs(outputDir, exist_ok=True)
+                # 输出文件路径
+                outputFilePath = os.path.join(outputDir, fileNameWithoutExtension + '.pdf')
+                # 提交任务
+                future = executor.submit(html_to_pdf, markdownToHtml(markdownFile, outputFilePath), outputFilePath)
+                futures.append((future, index, outputFilePath))
 
-        # 打印进度
-        print(f"当前进度: {index}/{total_files}\tPDF生成成功：{outputFilePath}")
-
-
+            # 获取任务结果并打印进度
+            for future, index, outputFilePath in futures:
+                try:
+                    future.result()  # 等待任务完成
+                    print(f"当前进度: {index}/{total_files}\tPDF生成成功：{outputFilePath}")
+                except Exception as e:
+                    print(f"当前进度: {index}/{total_files}\tPDF生成失败：{outputFilePath}, 错误: {e}")
 
 def startWeb():
     from flask import Flask
@@ -179,4 +192,4 @@ if __name__ == '__main__':
     # html_to_pdf(input_file, output_file)
 
     # startWeb()
-    pass
+    start()
