@@ -1,4 +1,5 @@
 import codecs
+import logging
 from datetime import datetime,timedelta
 import json
 import os
@@ -7,6 +8,8 @@ import shutil
 import subprocess
 import time
 from urllib.parse import unquote
+from venv import logger
+
 from prettytable import PrettyTable
 import requests
 import win32api
@@ -16,6 +19,7 @@ from git import Repo
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
+from myConfig import MyConfig
 from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src import checkStudyMap
 from src.exportRepositoryFiles import outputImgList
@@ -300,6 +304,28 @@ def copyValidImg(documentProjectPath):
     print(f"删除\033[31m{removeNum}\033[0m个无效图片")
     os.startfile(newImgPath)
 
+
+def findEmptyFolders(folder_path):
+    ignore_list = MyConfig.PublicConfig.skip_items
+    empty_folders = set()
+    for root, dirs, files in os.walk(folder_path, topdown=True):
+        # 根据ignore_list过滤dirs，避免进入不需要检查的子目录
+        dirs[:] = [d for d in dirs if d not in ignore_list]
+
+        # 检查当前目录是否为空：没有文件，且所有子目录都是空的
+        if not files and all(os.path.join(root, d) in empty_folders for d in dirs):
+            empty_folders.add(root)
+
+    # 将绝对路径转换为相对于输入路径的相对路径
+    base_path = folder_path
+    relative_paths = []
+    for path in empty_folders:
+        # 使用os.path.relpath获取相对路径
+        relative_path = os.path.relpath(path, base_path)
+        relative_paths.append(relative_path)
+        logger.warning(f"空文件夹：{relative_path}")
+    return relative_paths
+
 #将所有markdown合并成一个markdown，并将所有图片路径进行统一的转换
 def mergeDocument(documentProjectPath):
     if not input("当前文档路径为："+documentProjectPath+"\t确认（y/n）").lower() == "y":
@@ -539,6 +565,9 @@ def start():
     if len(invalidMappingTable.rows) > 0:
         print("\033[31m以下路径疑似失效:\033[0m")
         print(invalidMappingTable)
+
+    findEmptyFolders(documentProjectPath)
+
     hintText = '''
 \033[36m其他\033[0m
 \t1、导出assets下的有效引用图片（用于减少打压缩包体积）
