@@ -6,10 +6,10 @@ import git
 import os
 import shutil
 from datetime import datetime
-from PySide6.QtCore import QDateTime, Qt
+from PySide6.QtCore import QDateTime, Qt, QThread, Signal
 from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import QApplication, QMessageBox, QFileDialog, QHBoxLayout, QPushButton, QLabel, QCheckBox, \
-    QLineEdit, QDateTimeEdit, QVBoxLayout, QDialog
+    QLineEdit, QDateTimeEdit, QVBoxLayout, QDialog, QComboBox, QListView, QScrollArea, QWidget, QLayout, QGridLayout
 from myConfig import MyConfig
 from myConfig.MyConfig import PrivateConfig, PublicConfig
 from src.utils import MyUtil, z7_pack
@@ -28,6 +28,26 @@ class OutputRepoForm:
         data_dict = {key: value for key, value in self.__dict__.items()}
         return json.dumps(data_dict, indent=4, ensure_ascii=False)
 
+
+class BranchUpdaterThread(QThread):
+    """异步更新分支的线程"""
+    branch_updated = Signal(list)  # 定义信号，用于传递更新后的分支列表
+
+    def __init__(self, repo_path):
+        super().__init__()
+        self.repo_path = repo_path
+
+    def run(self):
+        try:
+            # 获取仓库分支列表
+            repo = git.Repo(self.repo_path)
+            branches = [branch.name for branch in repo.branches]
+            branches.reverse()  # 反转列表以便显示最新分支在前
+            self.branch_updated.emit(branches)  # 发送信号
+        except Exception as e:
+            print(f"获取分支失败: {e}")
+
+
 class MyForm(QDialog):
     def __init__(self):
         super().__init__()
@@ -35,37 +55,23 @@ class MyForm(QDialog):
         self.init_ui()
 
     def init_ui(self):
-
-        # imgBase64Str = ''
-        # # 解码 base64 字符串
-        # byte_data = base64.b64decode(imgBase64Str)
-        # # 将字节数据转换为 QByteArray
-        # q_byte_array = QByteArray(byte_data)
-        # # 从 QByteArray 创建 QPixmap
-        # pixmap = QPixmap()
-        # pixmap.loadFromData(q_byte_array)
-
-        # 图片标签
-        # image_label = QLabel(self)
-        # image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../ui/img/图片.png')
-        # pixmap = QPixmap(image_path)  # 替换为实际的图片路径
-        # image_label.setPixmap(pixmap.scaledToWidth(250))  # 设置图片大小
-        # image_label.setAlignment(Qt.AlignCenter)  # 居中显示
-
         # 创建表单布局
         form_layout = QVBoxLayout()
 
-        if os.path.exists(PrivateConfig.repoPath):
-            if os.path.exists(os.path.join(PrivateConfig.repoPath, '.git')):
-                self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath}")
-            else:
-                self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath} （该文件不是git仓库）")
-        else:
-            self.text_label2 = QLabel(f"仓库路径：\t{PrivateConfig.repoPath} （无效路径）")
+        # 新增：仓库路径下拉框
+        self.repo_path_combo = QComboBox()
+        self.repo_path_combo.setEditable(True)  # 设置为可编辑模式
+        self.repo_path_combo.addItem(PrivateConfig.repoPath)
+        self.repo_path_combo.addItem(PrivateConfig.coreAgentRepoPath)
+        self.repo_path_combo.setCurrentText(PrivateConfig.repoPath)  # 默认选中第一个选项
 
+        repo_path_layout = QHBoxLayout()
+        repo_path_layout.addWidget(QLabel("仓库路径:"))
+        repo_path_layout.addWidget(self.repo_path_combo)
+        form_layout.addLayout(repo_path_layout)
 
-        self.text_label2.setFixedHeight(20)
-        form_layout.addWidget(self.text_label2)
+        # 新增：监听仓库路径变化
+        self.repo_path_combo.currentTextChanged.connect(self.update_branches)
 
         # 开始日期时间选择器
         self.start_datetime_edit = QDateTimeEdit(QDateTime.currentDateTime())
@@ -132,14 +138,35 @@ class MyForm(QDialog):
 
         # 多选框
         self.checkboxes = []
-        options = PrivateConfig.branchList
-        checkbox_layout = QHBoxLayout()
-        checkbox_layout.addWidget(QLabel("分支:"))
+
+        repo = git.Repo(MyConfig.PrivateConfig.repoPath)
+        options = [branch.name for branch in repo.branches]
+        options.reverse()
+
+        # 添加多选框到滚动区域
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        scroll_widget = QWidget()
+        scroll_layout = QVBoxLayout(scroll_widget)
+        scroll_layout.setAlignment(Qt.AlignTop)
+
+        # 使用 QGridLayout 来实现自动换行
+        grid_layout = QGridLayout()
+        row, col = 0, 0
         for option in options:
             checkbox = QCheckBox(option)
-            checkbox_layout.addWidget(checkbox)
             self.checkboxes.append(checkbox)
-        form_layout.addLayout(checkbox_layout)
+            grid_layout.addWidget(checkbox, row, col)
+            col += 1
+            if col >= 4:  # 每行最多显示3个复选框
+                col = 0
+                row += 1
+
+        # 将 QGridLayout 添加到 QVBoxLayout 中
+        scroll_layout.addLayout(grid_layout)
+        self.scroll_area.setWidget(scroll_widget)
+
+        form_layout.addWidget(self.scroll_area)
 
         # 确定按钮
         self.submit_button = QPushButton("开始导出")
@@ -164,18 +191,50 @@ class MyForm(QDialog):
         if folder_path:
             self.folder_input.setText(folder_path)
 
+    def update_branches(self, repo_path):
+        """异步更新分支多选框"""
+        # 清空现有分支多选框
+        for checkbox in self.checkboxes:
+            checkbox.deleteLater()
+        self.checkboxes.clear()
+
+        # 启动异步线程更新分支
+        self.updater_thread = BranchUpdaterThread(repo_path)
+        self.updater_thread.branch_updated.connect(self.on_branch_updated)
+        self.updater_thread.start()
+
+    def on_branch_updated(self, branches):
+        """更新分支多选框的回调函数"""
+        # 使用 QGridLayout 来实现自动换行
+        grid_layout = QGridLayout()
+        row, col = 0, 0
+        for branch in branches:
+            checkbox = QCheckBox(branch)
+            self.checkboxes.append(checkbox)
+            grid_layout.addWidget(checkbox, row, col)
+            col += 1
+            if col >= 4:  # 每行最多显示3个复选框
+                col = 0
+                row += 1
+
+        # 将 QGridLayout 添加到 QVBoxLayout 中
+        scroll_layout = self.scroll_area.widget().layout()
+        scroll_layout.addLayout(grid_layout)
+
     def validate_and_submit(self):
         output_assets_start_datetime = self.start_datetime_edit.dateTime().toSecsSinceEpoch()
         output_assets_end_datetime = self.end_datetime_edit.dateTime().toSecsSinceEpoch()
         folder_value = self.folder_input.text()
-        checkboxes_checked = any(cb.isChecked() for cb in self.checkboxes)
 
-        if not (output_assets_start_datetime and output_assets_end_datetime  and folder_value and checkboxes_checked):
+        # 获取选中的分支
+        selected_branches = [checkbox.text() for checkbox in self.checkboxes if checkbox.isChecked()]
+
+        if not (output_assets_start_datetime and output_assets_end_datetime and folder_value and selected_branches):
             QMessageBox.warning(self, '警告', '请填写所有必填项！')
         else:
             self.resule = OutputRepoForm(output_assets_start_datetime,
                                     output_assets_end_datetime,
-                                    [cb.text() for cb in self.checkboxes if cb.isChecked()],
+                                    selected_branches,
                                     self.is_output_doc_checkbox.isChecked(),
                                     self.add_doc_style_checkbox.isChecked(),
                                     folder_value

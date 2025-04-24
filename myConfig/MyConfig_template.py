@@ -3,8 +3,10 @@ from datetime import timedelta, datetime, time
 
 
 class PrivateConfig:
-    # 仓库路径
+    # codewave文档仓库路径
     repoPath = r'D:\工作\文档相关\low-code-doc'
+    # CoreAgent文档仓库路径
+    coreAgentRepoPath = r'D:\工作\文档相关\CoAgent-Doc'
     # 昵称，用于文末的署名
     nickname = '老王'
     # 仓库分支

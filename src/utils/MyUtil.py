@@ -124,9 +124,9 @@ def mergeDoc(docs_folder, output_folder=None,isDebug=None):
     return output_markdown
 
 #获取文件夹下所有markdown文件列表
-def getAllMarkdownFileByFolder(markdown_folderdocs_folder):
+def getAllMarkdownFileByFolder(markdown_folderdocs_folder,skip_items = MyConfig.PublicConfig.skip_items):
     markdow_file_list = []
-    skip_items = MyConfig.PublicConfig.skip_items
+
     for root, dirs, files in os.walk(markdown_folderdocs_folder):
         # 跳过在skip_items中的文件夹
         dirs[:] = [d for d in dirs if d not in skip_items]
