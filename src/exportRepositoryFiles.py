@@ -16,13 +16,14 @@ from src.utils import MyUtil, z7_pack
 
 
 class OutputRepoForm:
-    def __init__(self,startCommitTime:int, endCommitTime:int, branchList:list[str], isOutputDoc:bool, isAddDocStyle:bool,export_directory:str):
+    def __init__(self, startCommitTime: int, endCommitTime: int, branchList: list[str], isOutputDoc: bool, isAddDocStyle: bool, export_directory: str, repo_path: str):
         self.startCommitTime = startCommitTime
         self.endCommitTime = endCommitTime
         self.branchList = branchList
         self.isOutputDoc = isOutputDoc
         self.isAddDocStyle = isAddDocStyle
         self.export_directory = export_directory
+        self.repo_path = repo_path  # 新增属性：存储用户选择的仓库路径
 
     def __str__(self):
         data_dict = {key: value for key, value in self.__dict__.items()}
@@ -232,13 +233,16 @@ class MyForm(QDialog):
         if not (output_assets_start_datetime and output_assets_end_datetime and folder_value and selected_branches):
             QMessageBox.warning(self, '警告', '请填写所有必填项！')
         else:
-            self.resule = OutputRepoForm(output_assets_start_datetime,
-                                    output_assets_end_datetime,
-                                    selected_branches,
-                                    self.is_output_doc_checkbox.isChecked(),
-                                    self.add_doc_style_checkbox.isChecked(),
-                                    folder_value
-                                    )
+            # 修改：传递 repo_path 参数
+            self.resule = OutputRepoForm(
+                output_assets_start_datetime,
+                output_assets_end_datetime,
+                selected_branches,
+                self.is_output_doc_checkbox.isChecked(),
+                self.add_doc_style_checkbox.isChecked(),
+                folder_value,
+                self.repo_path_combo.currentText()  # 新增参数：用户选择的仓库路径
+            )
             # 关闭对话框
             self.accept()
 
@@ -251,7 +255,17 @@ def openForm() -> OutputRepoForm:
         resule = form.resule
         print(type(resule))
         print("Form data:", resule)
-        return resule
+        # 修改：将用户选择的仓库路径传递给 OutputRepoForm
+        selected_repo_path = form.repo_path_combo.currentText()
+        return OutputRepoForm(
+            resule.startCommitTime,
+            resule.endCommitTime,
+            resule.branchList,
+            resule.isOutputDoc,
+            resule.isAddDocStyle,
+            resule.export_directory,
+            selected_repo_path  # 新增参数：用户选择的仓库路径
+        )
     else:
         sys.exit()
 
@@ -267,6 +281,7 @@ def extract_changed_files(repo_path,branchList, start_datetime_timestamp, end_da
     repo = git.Repo(repo_path)
     # 如果工作区或暂存区有内容，则报提示
     if repo.is_dirty() or repo.index.diff('HEAD'):
+        print(repo_path)
         print(f"\033[31m当前工作区或暂存区有未提交的改动，请提交或储藏后再操作\033[m")
         print("程序结束")
         exit()
@@ -342,8 +357,13 @@ def extract_changed_files(repo_path,branchList, start_datetime_timestamp, end_da
                         # 导出文件
                         for img in currentImgList:
                             if img not in imgList:
-                                shutil.copy(os.path.join(repo_path, "assets", img), assetsOutputPath)
-                                print(f"文件成功导出：{img}")
+                                try:
+                                    shutil.copy(os.path.join(repo_path, "assets", img), assetsOutputPath)
+                                    print(f"文件成功导出：{img}")
+                                #异常
+                                except Exception as e:
+                                    print(f"文件导出失败：{img}，可能提交过的文件被删除了")
+                                    print(e)
                             else:
                                 print(f"文件已经导出过了：{img}")
                         imgList = list(OrderedDict.fromkeys(imgList + currentImgList))
@@ -423,32 +443,17 @@ def outputImgList(srcDir,imgList,outputPath):
         else:
             print(f"文件不存在：{img}")
 def start():
-    # # 文档仓库路径
-    # repo_path = PrivateConfig.repoPath
-    # # 要查找资源文件变更的起始时间
-    # start_date_str = PrivateConfig.startCommitTime
-    # # 要查找资源文件变更的截止时间
-    # end_date_str = PrivateConfig.endCommitTime
-    # # 要导出的分支
-    # branchList = PrivateConfig.branchList
-    #
-    # if input("是否需要导出文档压缩包？（y/n） ：").strip().lower() == 'y':
-    #     isOutputDoc = True
-    # else:
-    #     isOutputDoc = False
-
     form_data = openForm()
     pyOutputFiles = extract_changed_files(
-        repo_path = PrivateConfig.repoPath,
-        start_datetime_timestamp = form_data.startCommitTime,
-        end_datetime_timestamp = form_data.endCommitTime,
-        branchList = form_data.branchList,
-        target_directory = "assets",
-        isOutputDoc = form_data.isOutputDoc,
-        isAddDocStyle = form_data.isAddDocStyle,
+        repo_path=form_data.repo_path,  # 修改：使用 form_data.repo_path 替代 form_data.repo_path_combo.currentText()
+        start_datetime_timestamp=form_data.startCommitTime,
+        end_datetime_timestamp=form_data.endCommitTime,
+        branchList=form_data.branchList,
+        target_directory="assets",
+        isOutputDoc=form_data.isOutputDoc,
+        isAddDocStyle=form_data.isAddDocStyle,
         outputPath=form_data.export_directory
     )
-
 
     #检查脚本与实际导出图片
     #checkOutputFilesFolder = "C:\\Users\\25340\\Desktop\\AAA\\assets"
