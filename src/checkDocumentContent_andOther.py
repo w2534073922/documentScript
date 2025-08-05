@@ -548,8 +548,13 @@ def get_changed_files(repoPath, days):
         print(f"{file_path.split('/')[-1].split('.')[1]}\t\t\t\thttps://community.codewave.163.com/CommunityParent/fileIndex?filePath={file_path}\t{status}")
 
 def start():
-    #必填，项目文件夹路径
-    documentProjectPath = PrivateConfig.repoPath
+
+    select = input("CW文档输入1  ， CA文档输入输入2，请选择：")
+    if select == "1":
+        documentProjectPath = PrivateConfig.repoPath
+    if select == "2":
+        documentProjectPath = PrivateConfig.coreAgentRepoPath
+
     #documentProjectPath = 'D:\\工作\\文档相关\\客户部署\\codewave文档3.8-markdown包-20240705'
     #以下参数为可选，检测IDE中的文档映射链接时用到
 
