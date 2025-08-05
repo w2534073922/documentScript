@@ -32,14 +32,15 @@ def download_images(path=os.path.join(PublicConfig.project_root,'files/下载pop
 
             if url.startswith("http") or url.startswith("https"):
                 url = url.split(" ")[0]
+                tt = parse.quote_plus(url)
                 # url = parse.quote_plus(url)
                 if "code=" in  url:
                     #tt = parse.quote_plus(tt)
                     asset_path = os.path.join(os.path.dirname(path), 'assets', tt)
                 else:
                     tt = os.path.basename(url)
-                    tt = tt.split("path=")[1]
-                    tt = parse.quote_plus(tt)
+                    #tt = tt.split("path=")[1]
+
                     asset_path = os.path.join(os.path.dirname(path), 'assets', tt)
 
                 if not os.path.exists(os.path.dirname(asset_path)):
